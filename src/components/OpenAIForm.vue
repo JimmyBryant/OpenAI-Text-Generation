@@ -1,14 +1,13 @@
 <template>
     <div class="container">
-        <div class="left-side">
-            <!-- API Key 输入框 -->
+        <!-- 左侧部分 -->
+        <div class="left-panel">
             <div class="field">
                 <label for="apiKey">OpenAI API Key:</label>
                 <input id="apiKey" type="password" v-model="apiKey" placeholder="Enter your API Key"
                     @blur="saveApiKey" />
             </div>
 
-            <!-- 模型选择下拉框 -->
             <div class="field">
                 <label for="model">Model:</label>
                 <select id="model" v-model="model" @change="saveModel">
@@ -16,24 +15,40 @@
                 </select>
             </div>
         </div>
-        <div class="main-content">
 
-            <h1>OpenAI Text Generator</h1>
-            <div class="prompt-group">
-                <!-- Prompt 输入框 -->
-                <textarea v-model="prompt" placeholder="Enter your prompt here..." rows="4"></textarea>
-                <button @click="sendPrompt" :disabled="loading || !apiKey">
-                    {{ loading ? "Generating..." : "Send" }}
-                </button>
+        <!-- 右侧部分 -->
+        <div class="right-panel">
+            <!-- 顶部: System Message -->
+            <div class="field">
+                <label for="systemMessage">System Message:</label>
+                <textarea id="systemMessage" v-model="systemMessage" placeholder="Enter system message..." rows="3"
+                    @blur="saveSystemMessage"></textarea>
             </div>
 
-
-            <!-- 显示生成结果 -->
-            <div v-if="result" class="result">
-                <h2>Generated Text:</h2>
-                <p>{{ result }}</p>
+            <!-- 中间: 对话记录 -->
+            <div class="chat-history">
+                <h2>Chat History</h2>
+                <div v-for="(message, index) in messages" :key="index" class="message">
+                    <select v-model="message.role">
+                        <option value="system">System</option>
+                        <option value="user">User</option>
+                        <option value="assistant">Assistant</option>
+                    </select>
+                    <textarea v-model="message.content" placeholder="Message content" rows="2"></textarea>
+                </div>
+                <button class="clear-button" @click="clearMessages">Clear Chat History</button>
             </div>
 
+            <!-- 底部: User Message -->
+            <div class="field">
+                <label for="userMessage">User Message:</label>
+                <textarea id="userMessage" v-model="userMessage" placeholder="Enter user message..." rows="3"
+                    @blur="saveUserMessage"></textarea>
+            </div>
+
+            <button @click="sendPrompt" :disabled="loading || !apiKey">
+                {{ loading ? "Generating..." : "Send" }}
+            </button>
         </div>
     </div>
 </template>
@@ -43,23 +58,51 @@ import { ref } from "vue";
 import axios from "axios";
 
 // 响应式数据
-const prompt = ref("");
-const result = ref("");
-const loading = ref(false);
-
-// 用户配置
 const apiKey = ref(localStorage.getItem("apiKey") || "");
 const model = ref(localStorage.getItem("model") || "gpt-4o-mini");
+const systemMessage = ref(localStorage.getItem("systemMessage") || "");
+const userMessage = ref(localStorage.getItem("userMessage") || "");
+const messages = ref([
+    { role: "system", content: localStorage.getItem("systemMessage") || "" },
+]);
+
+const loading = ref(false);
 const models = ["gpt-4o", "gpt-4o-mini"];
 
-// 保存用户输入到 localStorage
+// 保存数据到 localStorage
 const saveApiKey = () => localStorage.setItem("apiKey", apiKey.value);
 const saveModel = () => localStorage.setItem("model", model.value);
+const saveSystemMessage = () => {
+    localStorage.setItem("systemMessage", systemMessage.value);
+    updateSystemMessage();
+};
+const saveUserMessage = () => localStorage.setItem("userMessage", userMessage.value);
 
+// 更新对话记录中的 System Message
+const updateSystemMessage = () => {
+    const systemIndex = messages.value.findIndex((msg) => msg.role === "system");
+    if (systemIndex !== -1) {
+        messages.value[systemIndex].content = systemMessage.value;
+    } else {
+        messages.value.unshift({ role: "system", content: systemMessage.value });
+    }
+    saveMessages();
+};
+
+// 清空聊天记录
+const clearMessages = () => {
+    messages.value = [];
+    localStorage.setItem("messages", JSON.stringify(messages.value));
+};
+
+// 保存聊天记录到 localStorage
+const saveMessages = () => {
+    localStorage.setItem("messages", JSON.stringify(messages.value));
+};
 // 调用 OpenAI API
 const sendPrompt = async () => {
-    if (!prompt.value.trim()) {
-        alert("Please enter a prompt.");
+    if (!userMessage.value.trim()) {
+        alert("User message cannot be empty.");
         return;
     }
     if (!apiKey.value) {
@@ -67,13 +110,16 @@ const sendPrompt = async () => {
         return;
     }
 
+    // 将当前用户输入加入到对话记录
+    messages.value.push({ role: "user", content: userMessage.value });
     loading.value = true;
+
     try {
         const response = await axios.post(
             "https://api.openai.com/v1/chat/completions",
             {
                 model: model.value,
-                messages: [{ role: "user", content: prompt.value }],
+                messages: messages.value,
                 max_tokens: 150,
                 temperature: 0.7,
             },
@@ -84,10 +130,13 @@ const sendPrompt = async () => {
                 },
             }
         );
-        result.value = response.data.choices[0].message.content.trim();
+
+        const assistantMessage = response.data.choices[0].message.content.trim();
+        messages.value.push({ role: "assistant", content: assistantMessage });
+        userMessage.value = ""; // 清空用户输入
     } catch (error) {
         console.error("Error calling OpenAI API:", error);
-        alert("Failed to generate text. Please check your API Key or prompt.");
+        alert("Failed to generate text. Please check your API Key or messages.");
     } finally {
         loading.value = false;
     }
@@ -97,64 +146,85 @@ const sendPrompt = async () => {
 <style lang="scss" scoped>
 $primary-color: #3498db;
 $secondary-color: #2ecc71;
+$danger-color: #e74c3c;
 $font-color: #2c3e50;
 
 .container {
-    margin: 50px auto;
-    text-align: center;
-    font-family: Arial, sans-serif;
-    color: $font-color;
     display: flex;
+    margin: 20px auto;
+    font-family: Arial, sans-serif;
     gap: 2rem;
 
-    .left-side {
+    .left-panel {
         width: 300px;
+        padding: 20px;
+        border-right: 1px solid #ddd;
 
-        .field {
+        input,
+        select {
+            display: block;
+            box-sizing: border-box;
+            padding: .5rem;
+        }
+    }
 
-            input,
-            select {
-                box-sizing: border-box;
-                display: block;
-                width: 100%;
+    .right-panel {
+        width: 70%;
+        padding: 20px;
+
+        .chat-history {
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+
+            .message {
+                display: flex;
+                flex-direction: column;
+                margin-bottom: 10px;
+
+                select,
+                textarea {
+                    display: block;
+                    box-sizing: border-box;
+                    margin-top: 5px;
+                    padding: .5rem;
+                    width: 100%;
+                    font-size: 0.9rem;
+                    border: 1px solid #ddd;
+                    border-radius: 5px;
+                }
+
+                select {
+                    width: 120px;
+                }
+            }
+
+            .clear-button {
+                margin-top: 10px;
                 padding: .5rem;
+                background-color: $danger-color;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                font-size: .785rem;
+                cursor: pointer;
+
+                &:hover {
+                    background-color: darken($danger-color, 10%);
+                }
             }
         }
-    }
-
-    .main-content {
-        flex: 1;
-        padding: 2rem;
-        .prompt-group {
-            width: 100%;
-            display: flex;
-            flex-direction: row;
-            justify-content: flex-start;
-            gap: 1rem;
-            textarea{
-                flex:1;
-                padding: 1rem;
-            }
-        }
-    }
-
-
-
-    h1 {
-        font-size: 2rem;
-        margin-bottom: 1.5rem;
-        color: $primary-color;
     }
 
     .field {
         margin-bottom: 20px;
-        text-align: left;
 
         label {
-            display: block;
-            font-size: 1rem;
             font-weight: bold;
-            margin-bottom: 0.5rem;
         }
 
         input,
@@ -162,20 +232,20 @@ $font-color: #2c3e50;
         textarea {
             width: 100%;
             padding: 10px;
-            font-size: 1rem;
             margin-top: 5px;
+            font-size: 1rem;
             border: 1px solid #ddd;
             border-radius: 5px;
 
             &:focus {
                 outline: none;
                 border-color: $primary-color;
-                box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
             }
         }
     }
 
     button {
+        margin-top: 20px;
         padding: 10px 20px;
         font-size: 1rem;
         color: #fff;
@@ -183,7 +253,6 @@ $font-color: #2c3e50;
         border: none;
         border-radius: 5px;
         cursor: pointer;
-        transition: background-color 0.3s ease;
 
         &:hover {
             background-color: darken($secondary-color, 10%);
@@ -192,21 +261,6 @@ $font-color: #2c3e50;
         &:disabled {
             background-color: lighten($secondary-color, 20%);
             cursor: not-allowed;
-        }
-    }
-
-    .result {
-        margin-top: 30px;
-        text-align: left;
-
-        h2 {
-            font-size: 1.5rem;
-            color: $primary-color;
-        }
-
-        p {
-            font-size: 1rem;
-            line-height: 1.5;
         }
     }
 }
