@@ -144,6 +144,7 @@ const sendPrompt = async () => {
 </script>
 
 <style lang="scss" scoped>
+@use "sass:color";
 $primary-color: #3498db;
 $secondary-color: #2ecc71;
 $danger-color: #e74c3c;
@@ -214,7 +215,7 @@ $font-color: #2c3e50;
                 cursor: pointer;
 
                 &:hover {
-                    background-color: darken($danger-color, 10%);
+                    background-color: color.scale($danger-color, $lightness: -10%);
                 }
             }
         }
@@ -255,11 +256,11 @@ $font-color: #2c3e50;
         cursor: pointer;
 
         &:hover {
-            background-color: darken($secondary-color, 10%);
+            background-color: color.scale($secondary-color, $lightness: -10%);
         }
 
         &:disabled {
-            background-color: lighten($secondary-color, 20%);
+            background-color: color.scale($secondary-color, $lightness: 20%);
             cursor: not-allowed;
         }
     }
