@@ -62,10 +62,7 @@ const apiKey = ref(localStorage.getItem("apiKey") || "");
 const model = ref(localStorage.getItem("model") || "gpt-4o-mini");
 const systemMessage = ref(localStorage.getItem("systemMessage") || "");
 const userMessage = ref(localStorage.getItem("userMessage") || "");
-const messages = ref([
-    { role: "system", content: localStorage.getItem("systemMessage") || "" },
-]);
-
+const messages = ref(JSON.parse(localStorage.getItem("messages") || '[]') || []);
 const loading = ref(false);
 const models = ["gpt-4o", "gpt-4o-mini"];
 
@@ -80,7 +77,7 @@ const saveUserMessage = () => localStorage.setItem("userMessage", userMessage.va
 
 // 更新对话记录中的 System Message
 const updateSystemMessage = () => {
-    const systemIndex = messages.value.findIndex((msg) => msg.role === "system");
+    const systemIndex = messages.value.findIndex((msg: {role: string,content: string}) => msg.role === "system");
     if (systemIndex !== -1) {
         messages.value[systemIndex].content = systemMessage.value;
     } else {
@@ -112,6 +109,7 @@ const sendPrompt = async () => {
 
     // 将当前用户输入加入到对话记录
     messages.value.push({ role: "user", content: userMessage.value });
+    saveMessages();
     loading.value = true;
 
     try {
@@ -133,6 +131,7 @@ const sendPrompt = async () => {
 
         const assistantMessage = response.data.choices[0].message.content.trim();
         messages.value.push({ role: "assistant", content: assistantMessage });
+        saveMessages();
         userMessage.value = ""; // 清空用户输入
     } catch (error) {
         console.error("Error calling OpenAI API:", error);
