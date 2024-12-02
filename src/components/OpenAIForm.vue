@@ -154,7 +154,8 @@ $font-color: #2c3e50;
     display: flex;
     margin: 0 auto;
     font-family: Arial, sans-serif;
-
+    min-height: 100vh;
+    height: auto;
     .left-panel {
         width: 300px;
         padding: 20px;
@@ -172,13 +173,15 @@ $font-color: #2c3e50;
         flex: 1;
         padding: 20px;
         position: relative;
+        display: flex;
+        flex-direction: column;
         .chat-history {
             margin: 20px 0;
             border: 1px solid #ddd;
             padding: 10px;
             border-radius: 5px;
             background-color: #f9f9f9;
-
+            flex: 1;
             .message {
                 display: flex;
                 flex-direction: column;
@@ -250,6 +253,10 @@ $font-color: #2c3e50;
         }
     }
     .field{
+        label{
+            margin-bottom: 1rem;
+            display: block;
+        }
         input,
         select,
         textarea {
