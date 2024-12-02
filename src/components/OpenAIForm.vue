@@ -40,15 +40,16 @@
             </div>
 
             <!-- 底部: User Message -->
-            <div class="field">
-                <label for="userMessage">User Message:</label>
-                <textarea id="userMessage" v-model="userMessage" placeholder="Enter user message..." rows="3"
-                    @blur="saveUserMessage"></textarea>
-            </div>
+            <div class="user-message">
+                <div class="field">
+                    <textarea id="userMessage" v-model="userMessage" placeholder="Enter user message..." rows="3"
+                        @blur="saveUserMessage"></textarea>
+                </div>
 
-            <button @click="sendPrompt" :disabled="loading || !apiKey">
-                {{ loading ? "Generating..." : "Send" }}
-            </button>
+                <button @click="sendPrompt" :disabled="loading || !apiKey">
+                    {{ loading ? "Generating..." : "Send" }}
+                </button>
+            </div>
         </div>
     </div>
 </template>
@@ -77,7 +78,7 @@ const saveUserMessage = () => localStorage.setItem("userMessage", userMessage.va
 
 // 更新对话记录中的 System Message
 const updateSystemMessage = () => {
-    const systemIndex = messages.value.findIndex((msg: {role: string,content: string}) => msg.role === "system");
+    const systemIndex = messages.value.findIndex((msg: { role: string, content: string }) => msg.role === "system");
     if (systemIndex !== -1) {
         messages.value[systemIndex].content = systemMessage.value;
     } else {
@@ -151,9 +152,8 @@ $font-color: #2c3e50;
 
 .container {
     display: flex;
-    margin: 20px auto;
+    margin: 0 auto;
     font-family: Arial, sans-serif;
-    gap: 2rem;
 
     .left-panel {
         width: 300px;
@@ -169,13 +169,11 @@ $font-color: #2c3e50;
     }
 
     .right-panel {
-        width: 70%;
+        flex: 1;
         padding: 20px;
-
+        position: relative;
         .chat-history {
             margin: 20px 0;
-            max-height: 300px;
-            overflow-y: auto;
             border: 1px solid #ddd;
             padding: 10px;
             border-radius: 5px;
@@ -219,20 +217,44 @@ $font-color: #2c3e50;
             }
         }
     }
-
-    .field {
-        margin-bottom: 20px;
-
-        label {
-            font-weight: bold;
+    .user-message {
+        display: flex;
+        width: 100%;
+        gap: 2rem;
+        margin-top: 100px;
+        .field {
+            flex: 1;
+            line-height: 0;
+            label {
+                font-weight: bold;
+            }
         }
 
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            color: #fff;
+            background-color: $secondary-color;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+
+            &:hover {
+                background-color: color.scale($secondary-color, $lightness: -10%);
+            }
+
+            &:disabled {
+                background-color: color.scale($secondary-color, $lightness: 20%);
+                cursor: not-allowed;
+            }
+        }
+    }
+    .field{
         input,
         select,
         textarea {
             width: 100%;
             padding: 10px;
-            margin-top: 5px;
             font-size: 1rem;
             border: 1px solid #ddd;
             border-radius: 5px;
@@ -241,26 +263,6 @@ $font-color: #2c3e50;
                 outline: none;
                 border-color: $primary-color;
             }
-        }
-    }
-
-    button {
-        margin-top: 20px;
-        padding: 10px 20px;
-        font-size: 1rem;
-        color: #fff;
-        background-color: $secondary-color;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-
-        &:hover {
-            background-color: color.scale($secondary-color, $lightness: -10%);
-        }
-
-        &:disabled {
-            background-color: color.scale($secondary-color, $lightness: 20%);
-            cursor: not-allowed;
         }
     }
 }

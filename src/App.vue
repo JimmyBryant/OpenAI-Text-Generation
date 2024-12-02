@@ -19,6 +19,5 @@ export default defineComponent({
 <style>
 main {
   font-family: Arial, sans-serif;
-  padding: 20px;
 }
 </style>
