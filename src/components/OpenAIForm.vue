@@ -34,7 +34,8 @@
                         <option value="user">User</option>
                         <option value="assistant">Assistant</option>
                     </select>
-                    <textarea v-model="message.content" placeholder="Message content" rows="2"></textarea>
+                    <textarea v-model="message.content" placeholder="Message content" rows="3"></textarea>
+                    <button class="delete-button" @click="deleteMessage(index)">Delete</button>
                 </div>
                 <button class="clear-button" @click="clearMessages">Clear Chat History</button>
             </div>
@@ -86,7 +87,10 @@ const updateSystemMessage = () => {
     }
     saveMessages();
 };
-
+// 删除指定消息
+const deleteMessage = (index: number) => {
+  messages.value.splice(index, 1);
+};
 // 清空聊天记录
 const clearMessages = () => {
     messages.value = [];
@@ -197,10 +201,18 @@ $font-color: #2c3e50;
                     font-size: 0.9rem;
                     border: 1px solid #ddd;
                     border-radius: 5px;
+                    resize: vertical;
                 }
 
                 select {
                     width: 120px;
+                }
+                .delete-button {
+                    background-color: #434343;
+                    font-size: 11px;
+                    width: 60px;
+                    color: #FFF;
+                    margin: 1rem 0;
                 }
             }
 
